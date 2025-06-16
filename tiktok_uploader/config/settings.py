@@ -1,4 +1,8 @@
-from .basics import eprint
+import os
+
+from dotenv import load_dotenv
+
+from ..utils.basics import eprint
 
 
 class Config:
@@ -21,11 +25,12 @@ class Config:
 
     _instance = None
 
-    def __init__(self, path=None) -> None:
+    def __init__(self, path: str | None = None) -> None:
         if not Config._instance:
             Config._instance = self
+            load_dotenv()
             if not path:
-                self._options = Config._DEFAULT_OPTIONS
+                self._options = {k: os.getenv(k, v) for k, v in Config._DEFAULT_OPTIONS.items()}
                 self.path = None
             else:
                 self.path = path
@@ -55,7 +60,7 @@ class Config:
                             config._insert_option(opt_name, Config._parse_basic_option(line))
                                                   
                 if not valid:
-                    eprint("Error reading config file, Please check your config file!")
+                    eprint("Ошибка чтения конфигурации. Проверьте файл конфигурации")
 
         Config._instance = config
         return config

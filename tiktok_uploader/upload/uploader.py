@@ -1,12 +1,33 @@
-import time, requests, datetime, hashlib, hmac, random, zlib, json, datetime
-import requests, zlib, json, time, subprocess, string, secrets, os, sys
+"""Логика загрузки видео и авторизации."""
+
+from __future__ import annotations
+
+import datetime
+import hashlib
+import hmac
+import json
+import os
+import random
+import secrets
+import string
+import subprocess
+import sys
+import time
+import uuid
+import zlib
+from typing import Any
+
+import requests
+from dotenv import load_dotenv
 from fake_useragent import FakeUserAgentError, UserAgent
 from requests_auth_aws_sigv4 import AWSSigV4
-from tiktok_uploader.cookies import load_cookies_from_file
-from tiktok_uploader.Browser import Browser
-from tiktok_uploader.bot_utils import *
-from tiktok_uploader import Config, Video, eprint
-from dotenv import load_dotenv
+
+from ..utils.cookies import load_cookies_from_file
+from ..core.browser import Browser
+from ..utils.bot_utils import *
+from ..config.settings import Config
+from ..core.video import Video
+from ..utils.basics import eprint
 
 
 # Load environment variables
@@ -16,66 +37,82 @@ load_dotenv()
 _UA = 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/68.0.3440.106 Safari/537.36'
 
 
-def login(login_name: str):
-	# Check if login name is already save in file.
-	cookies = load_cookies_from_file(f"tiktok_session-{login_name}")
-	session_cookie = next((c for c in cookies if c["name"] == 'sessionid'), None)
-	session_from_file = session_cookie is not None
+def login(login_name: str) -> str:
+    """Авторизация пользователя и сохранение cookie."""
 
-	if session_from_file:
-		print("Unnecessary login: session already saved!")
-		return session_cookie["value"]
+    cookies = load_cookies_from_file(f"tiktok_session-{login_name}")
+    session_cookie = next((c for c in cookies if c["name"] == "sessionid"), None)
+    session_from_file = session_cookie is not None
 
-	browser = Browser.get()
-	response = browser.driver.get(os.getenv("TIKTOK_LOGIN_URL"))
+    if session_from_file:
+        print("Повторный вход не требуется, сессия уже сохранена!")
+        return session_cookie["value"]
 
-	session_cookies = []
-	while not session_cookies:
-		for cookie in browser.driver.get_cookies():
-			if cookie["name"] in ["sessionid", "tt-target-idc"]:
-				if cookie["name"] == "sessionid":
-					cookie_name = cookie
-				session_cookies.append(cookie)
+    browser = Browser.get()
+    browser.driver.get(os.getenv("TIKTOK_LOGIN_URL"))
+
+    session_cookies = []
+    while not session_cookies:
+        for cookie in browser.driver.get_cookies():
+            if cookie["name"] in ["sessionid", "tt-target-idc"]:
+                if cookie["name"] == "sessionid":
+                    cookie_name = cookie
+                session_cookies.append(cookie)
 
 	# print("Session cookie found: ", session_cookie["value"])
-	print("Account successfully saved.")
-	browser.save_cookies(f"tiktok_session-{login_name}", session_cookies)
-	browser.driver.quit()
+    print("Аккаунт успешно сохранён.")
+    browser.save_cookies(f"tiktok_session-{login_name}", session_cookies)
+    browser.driver.quit()
 
-	return cookie_name.get('value', '') if cookie_name else ''
+    return cookie_name.get("value", "") if cookie_name else ""
 
 
 # Local Code...
-def upload_video(session_user, video, title, schedule_time=0, allow_comment=1, allow_duet=0, allow_stitch=0, visibility_type=0, brand_organic_type=0, branded_content_type=0, ai_label=0, proxy=None):
-	try:
-		user_agent = UserAgent().random
-	except FakeUserAgentError as e:
-		user_agent = _UA
-		print("[-] Could not get random user agent, using default")
+def upload_video(
+    session_user: str,
+    video: str,
+    title: str,
+    schedule_time: int = 0,
+    allow_comment: int = 1,
+    allow_duet: int = 0,
+    allow_stitch: int = 0,
+    visibility_type: int = 0,
+    brand_organic_type: int = 0,
+    branded_content_type: int = 0,
+    ai_label: int = 0,
+    proxy: str | None = None,
+) -> bool:
+    """Загрузка видео на TikTok."""
 
-	cookies = load_cookies_from_file(f"tiktok_session-{session_user}")
-	session_id = next((c["value"] for c in cookies if c["name"] == 'sessionid'), None)
-	dc_id = next((c["value"] for c in cookies if c["name"] == 'tt-target-idc'), None)
+    try:
+        user_agent = UserAgent().random
+    except FakeUserAgentError:
+        user_agent = _UA
+        print("[-] Не удалось получить случайный User-Agent, используется стандартный")
+
+    cookies = load_cookies_from_file(f"tiktok_session-{session_user}")
+    session_id = next((c["value"] for c in cookies if c["name"] == "sessionid"), None)
+    dc_id = next((c["value"] for c in cookies if c["name"] == "tt-target-idc"), None)
 	
-	if not session_id:
-		eprint("No cookie with Tiktok session id found: use login to save session id")
-		sys.exit(1)
-	if not dc_id:
-		print("[WARNING]: Please login, tiktok datacenter id must be allocated, or may fail")
-		dc_id = "useast2a"
-	print("User successfully logged in.")
-	print(f"Tiktok Datacenter Assigned: {dc_id}")
+    if not session_id:
+        eprint("Не найден cookie с идентификатором сессии. Выполните вход.")
+        sys.exit(1)
+    if not dc_id:
+        print("[ВНИМАНИЕ]: выполните вход для получения идентификатора датацентра")
+        dc_id = "useast2a"
+    print("Пользователь успешно авторизован.")
+    print(f"Датацентр TikTok: {dc_id}")
 	
-	print("Uploading video...")
+    print("Загрузка видео...")
 	# Parameter validation,
 	if schedule_time and (schedule_time > 864000 or schedule_time < 900):
-		print("[-] Cannot schedule video in more than 10 days or less than 20 minutes")
+            print("[-] Нельзя планировать видео более чем на 10 дней или менее чем через 20 минут")
 		return False
 	if len(title) > 2200:
-		print("[-] The title has to be less than 2200 characters")
+            print("[-] Заголовок должен быть короче 2200 символов")
 		return False
 	if schedule_time != 0 and visibility_type == 1:
-		print("[-] Private videos cannot be uploaded with schedule")
+            print("[-] Нельзя планировать приватные видео")
 		return False
 
 	# Check video length - 1 minute max, takes too long to run this.
@@ -365,7 +402,8 @@ def upload_video(session_user, video, title, schedule_time=0, allow_comment=1, a
 	# 		print("Response ", j)
 
 
-def upload_to_tiktok(video_file, session):
+def upload_to_tiktok(video_file: str, session: requests.Session) -> tuple:
+    """Загружает файл на сервер TikTok."""
 	url = "https://www.tiktok.com/api/v1/video/upload/auth/?aid=1988"
 	r = session.get(url)
 	if not assert_success(url, r):
