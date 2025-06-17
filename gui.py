@@ -7,6 +7,47 @@ from PyQt5.QtWidgets import (
 )
 from qt_material import apply_stylesheet
 
+# Simple Russian translations for the UI
+TRANSLATIONS = {
+    "TikTok Uploader": "Загрузчик TikTok",
+    "Login": "Вход",
+    "Upload": "Загрузка",
+    "Data": "Данные",
+    "Account name": "Имя аккаунта",
+    "Account name:": "Имя аккаунта:",
+    "Account:": "Аккаунт:",
+    "Browse": "Обзор",
+    "Video path:": "Путь к видео:",
+    "YouTube URL:": "Ссылка YouTube:",
+    "Title:": "Название:",
+    "Schedule (sec):": "Запланировать (сек):",
+    "Allow comments": "Комментарии",
+    "Allow duet": "Дуэт",
+    "Allow stitch": "Сшивание",
+    "Visibility:": "Видимость:",
+    "Public": "Публичное",
+    "Private": "Приватное",
+    "Upload": "Загрузить",
+    "Refresh": "Обновить",
+    "Accounts:": "Аккаунты:",
+    "Videos:": "Видео:",
+    "Enter account name": "Введите имя аккаунта",
+    "Opening browser...": "Открывается браузер...",
+    "No account selected": "Аккаунт не выбран",
+    "Provide video path or YouTube URL": "Укажите путь к видео или ссылку YouTube",
+    "Choose only one source": "Выберите только один источник",
+    "Upload successful": "Загрузка успешна",
+    "Failed to upload": "Ошибка загрузки",
+    "Select Video": "Выбор видео",
+    "Video Files (*.mp4 *.webm)": "Файлы видео (*.mp4 *.webm)",
+    "Logged in as {name}\nSession ID: {session_id}": "Вошли как {name}\nID сессии: {session_id}"
+}
+
+
+def tr(text: str) -> str:
+    """Return translated text if available."""
+    return TRANSLATIONS.get(text, text)
+
 from tiktok_uploader import login, upload_video, Video
 from tiktok_uploader.config.settings import Config
 
@@ -15,17 +56,17 @@ class MainWindow(QMainWindow):
     def __init__(self):
         super().__init__()
         Config.load("./config.txt")
-        self.setWindowTitle("TikTok Uploader")
-        self.resize(600, 500)
+        self.setWindowTitle(tr("TikTok Uploader"))
+        self.resize(900, 700)
         self.tabs = QTabWidget()
         self.setCentralWidget(self.tabs)
 
         self.login_tab = QWidget()
         self.upload_tab = QWidget()
         self.data_tab = QWidget()
-        self.tabs.addTab(self.login_tab, "Login")
-        self.tabs.addTab(self.upload_tab, "Upload")
-        self.tabs.addTab(self.data_tab, "Data")
+        self.tabs.addTab(self.login_tab, tr("Login"))
+        self.tabs.addTab(self.upload_tab, tr("Upload"))
+        self.tabs.addTab(self.data_tab, tr("Data"))
 
         self._init_login_tab()
         self._init_upload_tab()
@@ -35,10 +76,10 @@ class MainWindow(QMainWindow):
     def _init_login_tab(self):
         layout = QVBoxLayout()
         self.login_name = QLineEdit()
-        self.login_name.setPlaceholderText("Account name")
-        self.login_button = QPushButton("Login")
+        self.login_name.setPlaceholderText(tr("Account name"))
+        self.login_button = QPushButton(tr("Login"))
         self.login_output = QLabel()
-        layout.addWidget(QLabel("Account name:"))
+        layout.addWidget(QLabel(tr("Account name:")))
         layout.addWidget(self.login_name)
         layout.addWidget(self.login_button)
         layout.addWidget(self.login_output)
@@ -48,35 +89,35 @@ class MainWindow(QMainWindow):
     def _init_upload_tab(self):
         layout = QVBoxLayout()
         self.user_combo = QComboBox()
-        layout.addWidget(QLabel("Account:"))
+        layout.addWidget(QLabel(tr("Account:")))
         layout.addWidget(self.user_combo)
 
         video_layout = QHBoxLayout()
         self.video_path = QLineEdit()
-        self.video_browse = QPushButton("Browse")
+        self.video_browse = QPushButton(tr("Browse"))
         video_layout.addWidget(self.video_path)
         video_layout.addWidget(self.video_browse)
-        layout.addWidget(QLabel("Video path:"))
+        layout.addWidget(QLabel(tr("Video path:")))
         layout.addLayout(video_layout)
         self.video_browse.clicked.connect(self.browse_video)
 
         self.youtube_url = QLineEdit()
-        layout.addWidget(QLabel("YouTube URL:"))
+        layout.addWidget(QLabel(tr("YouTube URL:")))
         layout.addWidget(self.youtube_url)
 
         self.title_edit = QLineEdit()
-        layout.addWidget(QLabel("Title:"))
+        layout.addWidget(QLabel(tr("Title:")))
         layout.addWidget(self.title_edit)
 
         self.schedule_spin = QSpinBox()
         self.schedule_spin.setRange(0, 864000)
-        layout.addWidget(QLabel("Schedule (sec):"))
+        layout.addWidget(QLabel(tr("Schedule (sec):")))
         layout.addWidget(self.schedule_spin)
 
         option_layout = QHBoxLayout()
-        self.comment_cb = QCheckBox("Allow comments")
-        self.duet_cb = QCheckBox("Allow duet")
-        self.stitch_cb = QCheckBox("Allow stitch")
+        self.comment_cb = QCheckBox(tr("Allow comments"))
+        self.duet_cb = QCheckBox(tr("Allow duet"))
+        self.stitch_cb = QCheckBox(tr("Allow stitch"))
         self.comment_cb.setChecked(True)
         option_layout.addWidget(self.comment_cb)
         option_layout.addWidget(self.duet_cb)
@@ -84,11 +125,11 @@ class MainWindow(QMainWindow):
         layout.addLayout(option_layout)
 
         self.visibility_combo = QComboBox()
-        self.visibility_combo.addItems(["Public", "Private"])
-        layout.addWidget(QLabel("Visibility:"))
+        self.visibility_combo.addItems([tr("Public"), tr("Private")])
+        layout.addWidget(QLabel(tr("Visibility:")))
         layout.addWidget(self.visibility_combo)
 
-        self.upload_button = QPushButton("Upload")
+        self.upload_button = QPushButton(tr("Upload"))
         self.upload_output = QLabel()
         layout.addWidget(self.upload_button)
         layout.addWidget(self.upload_output)
@@ -99,10 +140,10 @@ class MainWindow(QMainWindow):
         layout = QVBoxLayout()
         self.users_list = QListWidget()
         self.videos_list = QListWidget()
-        self.refresh_button = QPushButton("Refresh")
-        layout.addWidget(QLabel("Accounts:"))
+        self.refresh_button = QPushButton(tr("Refresh"))
+        layout.addWidget(QLabel(tr("Accounts:")))
         layout.addWidget(self.users_list)
-        layout.addWidget(QLabel("Videos:"))
+        layout.addWidget(QLabel(tr("Videos:")))
         layout.addWidget(self.videos_list)
         layout.addWidget(self.refresh_button)
         self.data_tab.setLayout(layout)
@@ -137,19 +178,19 @@ class MainWindow(QMainWindow):
     def handle_login(self):
         name = self.login_name.text().strip()
         if not name:
-            self.login_output.setText("Enter account name")
+            self.login_output.setText(tr("Enter account name"))
             return
-        self.login_output.setText("Opening browser...")
+        self.login_output.setText(tr("Opening browser..."))
         QApplication.processEvents()
         try:
             session_id = login(name)
-            self.login_output.setText(f"Logged in as {name}\nSession ID: {session_id}")
+            self.login_output.setText(f"{tr('Logged in as {name}\nSession ID: {session_id}').format(name=name, session_id=session_id)}")
             self.refresh_lists()
         except Exception as e:
             self.login_output.setText(str(e))
 
     def browse_video(self):
-        path, _ = QFileDialog.getOpenFileName(self, "Select Video", "", "Video Files (*.mp4 *.webm)")
+        path, _ = QFileDialog.getOpenFileName(self, tr("Select Video"), "", tr("Video Files (*.mp4 *.webm)"))
         if path:
             self.video_path.setText(path)
 
@@ -165,13 +206,13 @@ class MainWindow(QMainWindow):
         visibility = 0 if self.visibility_combo.currentIndex() == 0 else 1
 
         if not user:
-            self.upload_output.setText("No account selected")
+            self.upload_output.setText(tr("No account selected"))
             return
         if not video and not yt:
-            self.upload_output.setText("Provide video path or YouTube URL")
+            self.upload_output.setText(tr("Provide video path or YouTube URL"))
             return
         if video and yt:
-            self.upload_output.setText("Choose only one source")
+            self.upload_output.setText(tr("Choose only one source"))
             return
 
         if yt:
@@ -205,16 +246,16 @@ class MainWindow(QMainWindow):
             ""
         )
         if result:
-            self.upload_output.setText("Upload successful")
+            self.upload_output.setText(tr("Upload successful"))
         else:
-            self.upload_output.setText("Failed to upload")
+            self.upload_output.setText(tr("Failed to upload"))
 
 
 def main():
     app = QApplication(sys.argv)
-    apply_stylesheet(app, theme='light_blue.xml')
+    apply_stylesheet(app, theme='dark_blue.xml')
     win = MainWindow()
-    win.show()
+    win.showMaximized()
     sys.exit(app.exec_())
 
 
