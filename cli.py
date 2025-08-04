@@ -6,10 +6,17 @@ from tiktok_uploader import Video, login, upload_video
 from tiktok_uploader.utils.basics import eprint
 from tiktok_uploader.config.settings import Config
 
-if __name__ == "__main__":
+
+def main(argv=None):
+    """Entry point for the CLI interface."""
+    if argv is None:
+        argv = sys.argv[1:]
+
     _ = Config.load("./config.txt")
-    # print(Config.get().cookies_dir)
-    parser = argparse.ArgumentParser(description="TikTokAutoUpload CLI: загрузка и планирование видео")
+
+    parser = argparse.ArgumentParser(
+        description="TikTokAutoUpload CLI: загрузка и планирование видео"
+        )
     subparsers = parser.add_subparsers(dest="subcommand")
 
     # Login subcommand.
@@ -38,7 +45,7 @@ if __name__ == "__main__":
     show_parser.add_argument("-v", "--videos", action="store_true", help="Показать все видео")
 
     # Parse the command-line arguments
-    args = parser.parse_args()
+    args = parser.parse_args(argv)
 
     if args.subcommand == "login":
         if not hasattr(args, 'name') or args.name is None:
@@ -112,3 +119,5 @@ if __name__ == "__main__":
         eprint("Неверная подкоманда. Используйте 'login', 'upload' или 'show'.")
 
 
+if __name__ == "__main__":
+    main()
