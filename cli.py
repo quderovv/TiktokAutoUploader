@@ -1,16 +1,23 @@
 import argparse
 import os
 import sys
+import warnings
+
+warnings.filterwarnings("ignore", message="pkg_resources is deprecated")
 
 from tiktok_uploader import Video, login, upload_video
 from tiktok_uploader.utils.basics import eprint
 from tiktok_uploader.config.settings import Config
+from editor import process_videos
+from twitch import download_clips
+from scheduler import schedule_upload
 
 
 def main(argv=None):
     """Entry point for the CLI interface."""
     if argv is None:
         argv = sys.argv[1:]
+
 
     _ = Config.load("./config.txt")
 
@@ -43,6 +50,24 @@ def main(argv=None):
     show_parser = subparsers.add_parser("show", help="Показать доступных пользователей и видео")
     show_parser.add_argument("-u", "--users", action="store_true", help="Показать все сохранённые cookies")
     show_parser.add_argument("-v", "--videos", action="store_true", help="Показать все видео")
+
+    edit_parser = subparsers.add_parser("edit", help="Пакетное редактирование видео")
+    edit_parser.add_argument("src", help="Каталог с исходными видео")
+    edit_parser.add_argument("dst", help="Каталог для сохранения")
+    edit_parser.add_argument("--start", type=float, default=None)
+    edit_parser.add_argument("--end", type=float, default=None)
+    edit_parser.add_argument("--rotate", type=int, default=None)
+    edit_parser.add_argument("--speed", type=float, default=None)
+
+    fetch_parser = subparsers.add_parser("fetch", help="Скачать клипы с Twitch")
+    fetch_parser.add_argument("urls", nargs="+", help="Ссылки на клипы")
+    fetch_parser.add_argument("--out", default="clips", help="Каталог для сохранения")
+
+    sched_parser = subparsers.add_parser("schedule", help="Запланировать загрузку видео")
+    sched_parser.add_argument("accounts", help="Файл с аккаунтами")
+    sched_parser.add_argument("video", help="Видео для загрузки")
+    sched_parser.add_argument("title", help="Заголовок")
+    sched_parser.add_argument("time", help="Время в формате YYYY-MM-DDTHH:MM")
 
     # Parse the command-line arguments
     args = parser.parse_args(argv)
@@ -114,9 +139,24 @@ def main(argv=None):
                 print(f'[-] {name}')
         elif not args.users and not args.videos:
             print("Не указан флаг. Используйте -u или -v")
+    elif args.subcommand == "edit":
+        for _ in process_videos(
+            args.src, args.dst, start=args.start, end=args.end, rotate=args.rotate, speed=args.speed
+        ):
+            pass
+        print("Готово")
+    elif args.subcommand == "fetch":
+        download_clips(args.urls, args.out)
+        print("Загрузка завершена")
+    elif args.subcommand == "schedule":
+        from datetime import datetime
 
+        when = datetime.fromisoformat(args.time)
+        job_id = schedule_upload(when, args.accounts, args.video, args.title)
+        print(f"Задача запланирована: {job_id}")
     else:
-        eprint("Неверная подкоманда. Используйте 'login', 'upload' или 'show'.")
+        parser.print_help()
+        return 1
 
 
 if __name__ == "__main__":
