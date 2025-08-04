@@ -18,6 +18,7 @@ def main(argv=None):
     if argv is None:
         argv = sys.argv[1:]
 
+
     _ = Config.load("./config.txt")
 
     parser = argparse.ArgumentParser(

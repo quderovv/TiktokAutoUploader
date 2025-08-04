@@ -1,7 +1,7 @@
 """Unified entry point for TikTokAutoUploader.
 
 This module dispatches to either the command line interface or the GUI
-implementation.  By default the CLI is executed; passing ``--gui`` will
+implementation. By default the CLI is executed; passing ``--gui`` will
 launch the graphical interface.
 """
 import argparse
@@ -28,6 +28,7 @@ def main():
 
         if not remainder:
             remainder = ["--help"]
+
         cli_main(remainder)
 
 
