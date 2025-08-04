@@ -1,10 +1,25 @@
 import os
 import sys
+
+# Qt imports must come before qt_material to avoid initialization issues
 from PyQt5.QtWidgets import (
-    QApplication, QMainWindow, QWidget, QTabWidget,
-    QVBoxLayout, QHBoxLayout, QLabel, QLineEdit, QPushButton,
-    QListWidget, QFileDialog, QSpinBox, QCheckBox, QComboBox
+    QApplication,
+    QMainWindow,
+    QWidget,
+    QTabWidget,
+    QVBoxLayout,
+    QHBoxLayout,
+    QLabel,
+    QLineEdit,
+    QPushButton,
+    QListWidget,
+    QFileDialog,
+    QSpinBox,
+    QCheckBox,
+    QComboBox,
 )
+from PyQt5.QtGui import QFontDatabase
+
 from qt_material import apply_stylesheet
 
 # Simple Russian translations for the UI
@@ -251,13 +266,12 @@ class MainWindow(QMainWindow):
             self.upload_output.setText(tr("Failed to upload"))
 
 
-def main():
+def run_gui():
+    """Launch the GUI application."""
     app = QApplication(sys.argv)
-    apply_stylesheet(app, theme='dark_blue.xml')
+    apply_stylesheet(app, theme="dark_blue.xml")
+    # Ensure fonts are loaded to avoid QFontDatabase errors
+    QFontDatabase()
     win = MainWindow()
     win.showMaximized()
     sys.exit(app.exec_())
-
-
-if __name__ == '__main__':
-    main()
